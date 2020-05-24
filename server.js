@@ -11,15 +11,15 @@ mongoose.connect(process.env.MONGO_URI || "mongodb://localhost/exercise-track");
 
 var User = new Schema({
   _id: {
-    'type': String,
-    'default': shortid.generate
+    type: String,
+    default: shortid.generate
   },
   username: String,
   log: [
     {
       description: String,
       duration: Number,
-      exerciseDate: String
+      exerciseDate: {type: Date, default: Date.now()}
     }
   ]
 })
@@ -84,7 +84,8 @@ app.post('/api/exercise/add', async function(req, res) {
   const userId = req.body.userId
   const description = req.body.description
   const duration = req.body.duration
-  const date = new Date(req.body.date).toUTCString()
+  const date = req.body.date
+  
   let user = await User.findById(userId)
   if (user) {
     user.log.push({description, duration, date})
@@ -94,7 +95,7 @@ app.post('/api/exercise/add', async function(req, res) {
       username: user.username,
       description: description,
       duration: duration,
-      date: date
+      date: date.toUTCString()
     })
   }
 })
