@@ -6,10 +6,9 @@ const shortid = require('shortid')
 const cors = require("cors");
 
 const mongoose = require("mongoose");
-const Schema = mongoose.Schema
-mongoose.connect(process.env.MONGO_URI || "mongodb://localhost/exercise-track");
+mongoose.connect(process.env.MONGO_URI || "mongodb://localhost/exercise-track", {useNewUrlParser: true, useUnifiedTopology: true});
 
-var User = new Schema({
+var UserSchema = new mongoose.Schema({
   _id: {
     type: String,
     default: shortid.generate
@@ -24,6 +23,7 @@ var User = new Schema({
   ]
 })
 
+var User = mongoose.model('User', UserSchema)
 app.use(cors());
 
 app.use(bodyParser.urlencoded({ extended: false }));
@@ -35,9 +35,9 @@ app.get("/", (req, res) => {
 });
 
 // Not found middleware
-app.use((req, res, next) => {
-  return next({ status: 404, message: "not found" });
-});
+// app.use((req, res, next) => {
+//   return next({ status: 404, message: "not found" });
+// });
 
 // Error Handling middleware
 app.use((err, req, res, next) => {
@@ -64,8 +64,8 @@ app.post('/api/exercise/new-user', async function(req, res) {
   // First check to see if the username exists:
   const username = req.body.username
   var user = await User.find({username: username})
-  if (user) {
-    res.send('username already taken')
+  if (user._id) {
+    res.send(`username already taken: ${username}`)
   } else {
     // Now create a new record
     user = await User.create({
@@ -86,6 +86,7 @@ app.post('/api/exercise/add', async function(req, res) {
   const duration = req.body.duration
   const date = req.body.date
   
+  dateStr = new Date(date).toUTCString()
   let user = await User.findById(userId)
   if (user) {
     user.log.push({description, duration, date})
@@ -95,8 +96,46 @@ app.post('/api/exercise/add', async function(req, res) {
       username: user.username,
       description: description,
       duration: duration,
-      date: date.toUTCString()
+      date: dateStr
     })
+  }
+})
+
+app.get('/api/exercise/log', async function(req, res) {
+  // pull query params off the URL
+  const userId = req.query.userId
+  const fromDate = req.query.from
+  const toDate = req.query.to
+  const limit = req.query.limit
+
+  var user = await User.findById(userId)
+  if (user._id) {
+    let userVal = {
+      _id: user._id,
+      username: user.username,
+    }
+    let logs = user.log.filter((log) => {
+      if (fromDate) {
+        fd = new Date(fromDate)
+        userVal.from = fd.toUTCString()
+        if (toDate) {
+          td = new Date(toDate)
+          userVal.to = td.toUTCString()
+          return log.exerciseDate >= fd && log.exerciseDate <= td
+        }
+        return log.exerciseDate >= fd
+      }
+      return true
+    })
+    if (limit) {
+      logs = logs.slice(0, limit)
+    }
+    userVal.log = logs
+    userVal.count = logs.length
+
+    res.send(userVal)
+  } else {
+    res.send('unknown userId')
   }
 })
 
