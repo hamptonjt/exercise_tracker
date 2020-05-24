@@ -19,7 +19,7 @@ var User = new Schema({
     {
       description: String,
       duration: Number,
-      exerciseDate: Date
+      exerciseDate: String
     }
   ]
 })
@@ -84,12 +84,18 @@ app.post('/api/exercise/add', async function(req, res) {
   const userId = req.body.userId
   const description = req.body.description
   const duration = req.body.duration
-  const date = req.body.date
+  const date = new Date(req.body.date).toUTCString()
   let user = await User.findById(userId)
   if (user) {
     user.log.push({description, duration, date})
     user.save()
-    res.send()
+    res.send({
+      _id: user._id, 
+      username: user.username,
+      description: description,
+      duration: duration,
+      date: date
+    })
   }
 })
 
