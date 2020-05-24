@@ -15,11 +15,13 @@ var User = new Schema({
     'default': shortid.generate
   },
   username: String,
-  log: {
-    description: String,
-    duration: Number,
-    exerciseDate: Date
-  }
+  log: [
+    {
+      description: String,
+      duration: Number,
+      exerciseDate: Date
+    }
+  ]
 })
 
 app.use(cors());
@@ -61,7 +63,34 @@ app.use((err, req, res, next) => {
 app.post('/api/exercise/new-user', async function(req, res) {
   // First check to see if the username exists:
   const username = req.body.username
-  var user = await User.find
+  var user = await User.find({username: username})
+  if (user) {
+    res.send('username already taken')
+  } else {
+    // Now create a new record
+    user = await User.create({
+      _id: shortid.generate(),
+      username: username
+    })
+    res.send({
+      _id: user._id,
+      username: username
+    })
+  }
+})
+
+app.post('/api/exercise/add', async function(req, res) {
+  // create a new 
+  const userId = req.body.userId
+  const description = req.body.description
+  const duration = req.body.duration
+  const date = req.body.date
+  let user = await User.findById(userId)
+  if (user) {
+    user.log.push({description, duration, date})
+    user.save()
+    res.send()
+  }
 })
 
 const listener = app.listen(process.env.PORT || 3000, () => {
