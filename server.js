@@ -84,9 +84,15 @@ app.post('/api/exercise/add', async function(req, res) {
   const userId = req.body.userId
   const description = req.body.description
   const duration = req.body.duration
-  const date = req.body.date
+  var date
+
+  if (!req.body.date) {
+    date = Date.now()
+  } else {
+    date = req.body.date
+  }
   
-  dateStr = new Date(date).toUTCString()
+  var dateStr = new Date(date).toUTCString()
   let user = await User.findById(userId)
   if (user) {
     user.log.push({description, duration, date})
@@ -101,6 +107,11 @@ app.post('/api/exercise/add', async function(req, res) {
   }
 })
 
+app.get('/api/exercise/users', async function(req, res) {
+  let users = await User.find({}).select('_id username')
+  res.send(users)
+})
+
 app.get('/api/exercise/log', async function(req, res) {
   // pull query params off the URL
   const userId = req.query.userId
@@ -108,7 +119,7 @@ app.get('/api/exercise/log', async function(req, res) {
   const toDate = req.query.to
   const limit = req.query.limit
 
-  var user = await User.findById(userId)
+  var user = await User.findById(userId).sort('-exerciseDate')
   if (user._id) {
     let userVal = {
       _id: user._id,
@@ -116,14 +127,18 @@ app.get('/api/exercise/log', async function(req, res) {
     }
     let logs = user.log.filter((log) => {
       if (fromDate) {
-        fd = new Date(fromDate)
+        let fd = new Date(fromDate)
         userVal.from = fd.toUTCString()
         if (toDate) {
-          td = new Date(toDate)
+          let td = new Date(toDate)
           userVal.to = td.toUTCString()
           return log.exerciseDate >= fd && log.exerciseDate <= td
         }
         return log.exerciseDate >= fd
+      } else if (toDate) {
+        let td = new Date(toDate)
+        userVal.to = td.toUTCString()
+        return log.exerciseDate <= td
       }
       return true
     })
