@@ -1,6 +1,7 @@
 const express = require("express");
 const app = express();
 const bodyParser = require("body-parser");
+const shortid = require('shortid')
 
 const cors = require("cors");
 
@@ -9,7 +10,16 @@ const Schema = mongoose.Schema
 mongoose.connect(process.env.MONGO_URI || "mongodb://localhost/exercise-track");
 
 var User = new Schema({
-  
+  _id: {
+    'type': String,
+    'default': shortid.generate
+  },
+  username: String,
+  log: {
+    description: String,
+    duration: Number,
+    exerciseDate: Date
+  }
 })
 
 app.use(cors());
@@ -48,8 +58,10 @@ app.use((err, req, res, next) => {
     .send(errMessage);
 });
 
-app.post('/api/exercise/new-user', function(req, res) {
-  
+app.post('/api/exercise/new-user', async function(req, res) {
+  // First check to see if the username exists:
+  const username = req.body.username
+  var user = await User.find
 })
 
 const listener = app.listen(process.env.PORT || 3000, () => {
