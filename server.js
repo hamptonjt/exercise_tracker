@@ -92,7 +92,7 @@ app.post('/api/exercise/add', async function(req, res) {
     date = req.body.date
   }
   
-  var dateStr = new Date(date).toUTCString()
+  var dateStr = new Date(date).toUTCString().split(" ").slice(0, 4).join(" ")
   let user = await User.findById(userId)
   if (user) {
     user.log.push({description, duration, date})
@@ -128,16 +128,16 @@ app.get('/api/exercise/log', async function(req, res) {
     let logs = user.log.filter((log) => {
       if (fromDate) {
         let fd = new Date(fromDate)
-        userVal.from = fd.toUTCString()
+        userVal.from = fd.toUTCString().split(" ").slice(0, 4).join(" ")
         if (toDate) {
           let td = new Date(toDate)
-          userVal.to = td.toUTCString()
+          userVal.to = td.toUTCString().split(" ").slice(0, 4).join(" ")
           return log.exerciseDate >= fd && log.exerciseDate <= td
         }
         return log.exerciseDate >= fd
       } else if (toDate) {
         let td = new Date(toDate)
-        userVal.to = td.toUTCString()
+        userVal.to = td.toUTCString().split(" ").slice(0, 4).join(" ")
         return log.exerciseDate <= td
       }
       return true
@@ -145,9 +145,17 @@ app.get('/api/exercise/log', async function(req, res) {
     if (limit) {
       logs = logs.slice(0, limit)
     }
-    userVal.log = logs
-    userVal.count = logs.length
+    let fixedLog = logs.map((log) => {
+      return {
+        exerciseDate: log.exerciseDate.toUTCString().split(" ").slice(0, 4).join(" "),
+        description: log.description,
+        duration: log.duration
+      }
+    })
+    userVal.log = fixedLog
+    userVal.count = fixedLog.length
 
+    console.log(userVal)
     res.send(userVal)
   } else {
     res.send('unknown userId')
