@@ -83,7 +83,7 @@ app.post('/api/exercise/add', async function(req, res) {
   // create a new 
   const userId = req.body.userId
   const description = req.body.description
-  const duration = req.body.duration
+  const duration = Number(req.body.duration)
   var date
 
   if (!req.body.date) {
