@@ -13,7 +13,7 @@ var UserSchema = new mongoose.Schema({
     type: String,
     default: shortid.generate
   },
-  username: String,
+  username: {type: String, required: true},
   log: [
     {
       description: String,
@@ -84,24 +84,23 @@ app.post('/api/exercise/add', async function(req, res) {
   const userId = req.body.userId
   const description = req.body.description
   const duration = Number(req.body.duration)
-  var date
+  var exerciseDate
 
-  if (!req.body.date) {
-    date = Date.now()
+  if (!req.body.date || req.body.date === '') {
+    exerciseDate = Date.now()
   } else {
-    date = req.body.date
+    exerciseDate = req.body.date
   }
-  
-  var dateStr = new Date(date).toUTCString().split(" ").slice(0, 4).join(" ")
+  var dateStr = new Date(exerciseDate).toUTCString().split(" ").slice(0, 4).join(" ")
   let user = await User.findById(userId)
   if (user) {
-    user.log.push({description, duration, date})
+    user.log.push({description, duration, exerciseDate})
     user.save()
     res.send({
-      _id: user._id, 
       username: user.username,
       description: description,
       duration: duration,
+      _id: user._id, 
       date: dateStr
     })
   }
@@ -152,8 +151,8 @@ app.get('/api/exercise/log', async function(req, res) {
         duration: log.duration
       }
     })
-    userVal.log = fixedLog
     userVal.count = fixedLog.length
+    userVal.log = fixedLog
 
     console.log(userVal)
     res.send(userVal)
